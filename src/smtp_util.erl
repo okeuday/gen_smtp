@@ -126,11 +126,20 @@ combine_rfc822_addresses([{undefined, Email}|Rest], Acc) ->
 combine_rfc822_addresses([{Name, Email}|Rest], Acc) ->
 	combine_rfc822_addresses(Rest, [32, $,, $>, Email, $<, 32, opt_quoted(Name)|Acc]).
 
-opt_quoted(N)  ->
-	case re:run(N, "\"") of
-		nomatch -> N;
-		{match, _} ->
-			[$", re:replace(N, "\"", "\\\\\"", [global]), $"]
+opt_quoted(Name) ->
+	%% From RFC822:
+	%% specials     =  "(" / ")" / "<" / ">" / "@"  ; Must be in quoted-
+	%%              /  "," / ";" / ":" / "\" / <">  ;  string, to use
+	%%              /  "." / "[" / "]"              ;  within a word.
+	SpecialsRe = <<"[\(\)<>@,;:\"\.\\[\\]\\\\]">>,
+	case re:run(Name, SpecialsRe, [{capture, none}]) of
+		nomatch ->
+			Name;
+		match ->
+			%% Make sure to properly handle escape sequences.
+			Name1 = re:replace(Name, <<"\\\\">>, <<"\\\\\\\\">>, [global]),
+			Name2 = re:replace(Name1, <<"\"">>, <<"\\\\\"">>, [global]),
+			[$", Name2, $"]
 	end.
 
 parse_rfc822_addresses(B) when is_binary(B) ->
