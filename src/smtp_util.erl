@@ -170,7 +170,7 @@ scan_rfc822_scan_endpointybracket(String) ->
 
 scan_rfc822_scan_endquote([$\\|R], Acc, InEscape) ->
 	%% in escape
-	scan_rfc822_scan_endquote(R, Acc, not(InEscape));
+	scan_rfc822_scan_endquote(R, [$\\|Acc], not(InEscape));
 scan_rfc822_scan_endquote([$"|R], Acc, true) ->
 	scan_rfc822_scan_endquote(R, [$"|Acc], false);
 scan_rfc822_scan_endquote([$"|Rest], Acc, false) ->
