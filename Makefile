@@ -18,7 +18,7 @@ rebar_src:
 
 ## dialyzer
 PLT_FILE = ~/get_smtp.plt
-PLT_APPS ?= kernel stdlib erts compiler crypto ssl
+PLT_APPS ?= kernel stdlib erts compiler crypto ssl public_key
 DIALYZER_OPTS ?= -Werror_handling -Wrace_conditions -Wunmatched_returns \
 		-Wunderspecs --verbose --fullpath -n
 
