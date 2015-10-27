@@ -11,3 +11,4 @@ src/smtp_rfc822_parse.erl
 deps/
 /.settings/
 /.project
+/ebin/
