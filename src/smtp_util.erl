@@ -126,12 +126,20 @@ combine_rfc822_addresses([{undefined, Email}|Rest], Acc) ->
 combine_rfc822_addresses([{Name, Email}|Rest], Acc) ->
 	combine_rfc822_addresses(Rest, [32, $,, $>, Email, $<, 32, opt_quoted(Name)|Acc]).
 
-opt_quoted(N)  ->
-	case re:run(N, "\"", [{capture, none}]) of
+opt_quoted(Name) ->
+	%% From RFC822:
+	%% specials     =  "(" / ")" / "<" / ">" / "@"  ; Must be in quoted-
+	%%              /  "," / ";" / ":" / "\" / <">  ;  string, to use
+	%%              /  "." / "[" / "]"              ;  within a word.
+	SpecialsRe = <<"[\(\)<>@,;:\"\.\\[\\]\\\\]">>,
+	case re:run(Name, SpecialsRe, [{capture, none}]) of
 		nomatch ->
-			N;
+			Name;
 		match ->
-			[$", re:replace(N, "\"", "\\\\\"", [global]), $"]
+			%% Make sure to properly handle escape sequences.
+			Name1 = re:replace(Name, <<"\\\\">>, <<"\\\\\\\\">>, [global]),
+			Name2 = re:replace(Name1, <<"\"">>, <<"\\\\\"">>, [global]),
+			[$", Name2, $"]
 	end.
 
 parse_rfc822_addresses(B) when is_binary(B) ->
@@ -169,10 +177,9 @@ scan_rfc822_scan_endpointybracket(String) ->
 			{String, []}
 	end.
 
-scan_rfc822_scan_endquote([$\\|R], Acc, false) ->
-	scan_rfc822_scan_endquote(R, Acc, true);
-scan_rfc822_scan_endquote([$\\|R], Acc, true) ->
-	scan_rfc822_scan_endquote(R, [$\\|Acc], false);
+scan_rfc822_scan_endquote([$\\|R], Acc, InEscape) ->
+	%% in escape
+	scan_rfc822_scan_endquote(R, [$\\|Acc], not(InEscape));
 scan_rfc822_scan_endquote([$"|R], Acc, true) ->
 	scan_rfc822_scan_endquote(R, [$"|Acc], false);
 scan_rfc822_scan_endquote([$"|Rest], Acc, false) ->
